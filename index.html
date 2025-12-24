@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🎄 Merry Christmas</title>
+<style>
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Georgia', 'Times New Roman', serif;
+  overflow: hidden;
+  background: #000;
+}
+
+/* ===================== THREE.JS CANVAS ===================== */
+#canvas-container {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+}
+
+/* ===================== CARD OVERLAY ===================== */
+#card-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(circle, rgba(0,0,0,0.95), rgba(0,0,0,1));
+  perspective: 2000px;
+  transition: opacity 1s ease;
+}
+
+#card-overlay.hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* ===================== CARD STRUCTURE ===================== */
+.card-container {
+  position: relative;
+  width: 600px;
+  height: 400px;
+  transform-style: preserve-3d;
+}
+
+.card {
+  position: absolute;
+  width: 300px;
+  height: 400px;
+  transition: transform 1.5s cubic-bezier(0.4, 0, 0.2, 1);
+  transform-style: preserve-3d;
+  cursor: pointer;
+}
+
+/* Bìa trái */
+.card-left {
+  left: 0;
+  transform-origin: right center;
+}
+
+.card-left.open {
+  transform: rotateY(-165deg);
+}
+
+/* Bìa phải */
+.card-right {
+  right: 0;
+  transform-origin: left center;
+}
+
+.card-right.open {
+  transform: rotateY(165deg);
+}
+
+/* Mặt trước và sau của bìa */
+.card-face {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  backface-visibility: hidden;
+  border-radius: 8px;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+}
+
+.card-front {
+  background: linear-gradient(135deg, #8b0000 0%, #dc143c 50%, #8b0000 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  color: #fff;
+  text-shadow: 2px 2px 8px rgba(0,0,0,0.5);
+}
+
+.card-front h1 {
+  font-size: 32px;
+  margin-bottom: 20px;
+  letter-spacing: 2px;
+}
+
+.card-front p {
+  font-size: 16px;
+  opacity: 0.9;
+  font-style: italic;
+}
+
+.card-back {
+  background: #fff;
+  transform: rotateY(180deg);
+  padding: 30px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+.card-back img {
+  width: 100%;
+  height: 280px;
+  object-fit: cover;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+}
+
+.card-back .text-content {
+  text-align: center;
+  color: #8b0000;
+  margin-top: 20px;
+}
+
+.card-back .text-content h2 {
+  font-size: 24px;
+  margin-bottom: 10px;
+}
+
+.card-back .text-content p {
+  font-size: 14px;
+  line-height: 1.6;
+  font-style: italic;
+}
+
+/* Nút xác nhận */
+#confirm-btn {
+  position: absolute;
+  bottom: -80px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 14px 40px;
+  background: linear-gradient(135deg, #ffd700, #ffed4e);
+  color: #8b0000;
+  border: none;
+  border-radius: 30px;
+  font-size: 18px;
+  font-weight: bold;
+  cursor: pointer;
+  box-shadow: 0 4px 20px rgba(255, 215, 0, 0.5);
+  opacity: 0;
+  pointer-events: none;
+  transition: all 0.3s ease;
+  letter-spacing: 1px;
+}
+
+#confirm-btn.visible {
+  opacity: 1;
+  pointer-events: all;
+}
+
+#confirm-btn:hover {
+  transform: translateX(-50%) translateY(-2px);
+  box-shadow: 0 6px 25px rgba(255, 215, 0, 0.7);
+}
+
+/* ===================== CRUSH IMAGES ===================== */
+.crush-image {
+  position: fixed;
+  width: 200px;
+  height: 200px;
+  object-fit: cover;
+  border-radius: 16px;
+  box-shadow: 0 0 40px rgba(255, 215, 0, 0.6);
+  z-index: 50;
+  opacity: 0;
+  animation: crushFadeInOut 6s ease-in-out forwards;
+}
+
+@keyframes crushFadeInOut {
+  0% {
+    opacity: 0;
+    transform: scale(0.8) rotate(-5deg);
+  }
+  15% {
+    opacity: 1;
+    transform: scale(1) rotate(0deg);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.05) rotate(2deg);
+  }
+  85% {
+    opacity: 1;
+    transform: scale(1) rotate(0deg);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(0.8) rotate(5deg);
+  }
+}
+
+/* ===================== LOADING ===================== */
+#loading {
+  position: fixed;
+  inset: 0;
+  background: #000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 24px;
+  z-index: 200;
+  transition: opacity 0.5s ease;
+}
+
+#loading.hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+</style>
+</head>
+<body>
+
+<!-- Loading Screen -->
+<div id="loading">Đang tải...</div>
+
+<!-- Three.js Canvas -->
+<div id="canvas-container"></div>
+
+<!-- Card Overlay -->
+<div id="card-overlay">
+  <div class="card-container">
+    <!-- Bìa trái -->
+    <div class="card card-left" id="card-left">
+      <div class="card-face card-front">
+        <h4>🎄Giáng Sinh Vui Vẻ Nhé Hân🎄</h4>
+        <br>
+        <p>Bam để mở thiệp</p>
+      </div>
+      <div class="card-face card-back">
+        <img src="/asset/kiengo.jpg" alt="Lời chúc" id="wish-image">
+        <div class="text-content">
+          <!-- <h2>Giáng Sinh An Lành</h2> -->
+          <p>Chúc em hân một mùa Giáng Sinh tràn ngập niềm vui và hạnh phúc nhé :> , hong biết bọn mình sau này có liên lạc không nên anh làm cái này tặng em nhé 
+            để sau này có không liên lạc với nhau thì cứ mở ra xem lại kỉ niệm nha.
+          </p>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Bìa phải -->
+    <div class="card card-right" id="card-right">
+      <div class="card-face card-front">
+        <h1>🎁</h1>
+      </div>
+      <div class="card-face card-back">
+        <img src="./asset/kienhan.jpg" alt="Ảnh của tôi" id="my-image">
+        <div class="text-content">
+          <h2>Ngày 25/12/2025</h2>
+          <p>Gửi đến em hân sigma gơn</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Nút xác nhận -->
+    <button id="confirm-btn">Oke ✨</button>
+  </div>
+</div>
+
+<!-- Audio -->
+<audio id="bg-music" loop>
+  <source src="./asset/loinoidieu.MP3" type="audio/mpeg">
+</audio>
+
+<script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
+<script>
+// ===================== CONFIGURATION =====================
+const CONFIG = {
+  treeParticles: 12000,
+  snowParticles: 3000,
+  spreadSpeed: 0.08,
+  crushImages: [
+    './asset/han1.jpg',
+    './asset/han2.jpg',
+    './asset/han3.jpg',
+    './asset/hancuoi.jpg',
+    './asset/han4.JPEG',
+    './asset/han5.JPG',
+    './asset/han6.PNG',
+    './asset/kien1.jpg',
+    './asset/kien2.jpg',
+    './asset/kien3.jpg',
+  ]
+};
+
+// ===================== THREE.JS SETUP =====================
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 200);
+camera.position.set(0, 5, 15);
+
+const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.setClearColor(0x000000, 1);
+document.getElementById('canvas-container').appendChild(renderer.domElement);
+
+// ===================== LIGHTING =====================
+const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+scene.add(ambientLight);
+
+const pointLight = new THREE.PointLight(0xffd700, 1, 50);
+pointLight.position.set(0, 8, 0);
+scene.add(pointLight);
+
+// ===================== CHRISTMAS TREE PARTICLES =====================
+const treeGeometry = new THREE.BufferGeometry();
+const treePositions = new Float32Array(CONFIG.treeParticles * 3);
+const treeVelocities = new Float32Array(CONFIG.treeParticles * 3);
+const treeColors = new Float32Array(CONFIG.treeParticles * 3);
+
+// Tạo hình cây thông từ hạt
+for (let i = 0; i < CONFIG.treeParticles; i++) {
+  const y = Math.random() * 8;
+  const radius = (1 - y / 8) * 3 * Math.random();
+  const angle = Math.random() * Math.PI * 2;
+  
+  treePositions[i * 3] = Math.cos(angle) * radius;
+  treePositions[i * 3 + 1] = y;
+  treePositions[i * 3 + 2] = Math.sin(angle) * radius;
+  
+  // Màu gradient từ xanh lá đến vàng kim
+  const colorMix = y / 8;
+  treeColors[i * 3] = 0.2 + colorMix * 0.8; // R
+  treeColors[i * 3 + 1] = 0.8; // G
+  treeColors[i * 3 + 2] = 0.3 + colorMix * 0.5; // B
+}
+
+treeGeometry.setAttribute('position', new THREE.BufferAttribute(treePositions, 3));
+treeGeometry.setAttribute('color', new THREE.BufferAttribute(treeColors, 3));
+
+const treeMaterial = new THREE.PointsMaterial({
+  size: 0.08,
+  vertexColors: true,
+  transparent: true,
+  opacity: 0.9,
+  blending: THREE.AdditiveBlending
+});
+
+const treeParticles = new THREE.Points(treeGeometry, treeMaterial);
+scene.add(treeParticles);
+
+// ===================== STAR ON TOP =====================
+const starGeometry = new THREE.SphereGeometry(0.3, 16, 16);
+const starMaterial = new THREE.MeshBasicMaterial({ 
+  color: 0xffd700,
+  emissive: 0xffed4e,
+  emissiveIntensity: 1
+});
+const star = new THREE.Mesh(starGeometry, starMaterial);
+star.position.y = 8.5;
+scene.add(star);
+
+// Ánh sáng từ ngôi sao
+const starLight = new THREE.PointLight(0xffd700, 2, 20);
+starLight.position.copy(star.position);
+scene.add(starLight);
+
+// ===================== SNOW PARTICLES =====================
+const snowGeometry = new THREE.BufferGeometry();
+const snowPositions = new Float32Array(CONFIG.snowParticles * 3);
+
+for (let i = 0; i < CONFIG.snowParticles; i++) {
+  snowPositions[i * 3] = (Math.random() - 0.5) * 50;
+  snowPositions[i * 3 + 1] = Math.random() * 30;
+  snowPositions[i * 3 + 2] = (Math.random() - 0.5) * 50;
+}
+
+snowGeometry.setAttribute('position', new THREE.BufferAttribute(snowPositions, 3));
+
+const snowMaterial = new THREE.PointsMaterial({
+  size: 0.06,
+  color: 0xffffff,
+  transparent: true,
+  opacity: 0.8
+});
+
+const snowParticles = new THREE.Points(snowGeometry, snowMaterial);
+scene.add(snowParticles);
+
+// ===================== STATE MANAGEMENT =====================
+let isSpreadActive = false;
+let cardOpened = false;
+
+// ===================== ANIMATION LOOP =====================
+function animate() {
+  requestAnimationFrame(animate);
+  
+  // Xoay cây nhẹ nhàng
+  treeParticles.rotation.y += 0.002;
+  
+  // Hiệu ứng tỏa hạt (galaxy spread)
+  if (isSpreadActive) {
+    const positions = treeGeometry.attributes.position.array;
+    
+    for (let i = 0; i < CONFIG.treeParticles; i++) {
+      positions[i * 3] += treeVelocities[i * 3];
+      positions[i * 3 + 1] += treeVelocities[i * 3 + 1];
+      positions[i * 3 + 2] += treeVelocities[i * 3 + 2];
+    }
+    
+    treeGeometry.attributes.position.needsUpdate = true;
+  }
+  
+  // Tuyết rơi
+  const snowPos = snowGeometry.attributes.position.array;
+  for (let i = 0; i < CONFIG.snowParticles; i++) {
+    snowPos[i * 3 + 1] -= 0.04;
+    if (snowPos[i * 3 + 1] < -5) {
+      snowPos[i * 3 + 1] = 30;
+    }
+  }
+  snowGeometry.attributes.position.needsUpdate = true;
+  
+  // Ngôi sao lấp lánh
+  star.rotation.y += 0.02;
+  starLight.intensity = 2 + Math.sin(Date.now() * 0.003) * 0.5;
+  
+  renderer.render(scene, camera);
+}
+
+// ===================== CARD INTERACTION =====================
+const cardLeft = document.getElementById('card-left');
+const cardRight = document.getElementById('card-right');
+const confirmBtn = document.getElementById('confirm-btn');
+const cardOverlay = document.getElementById('card-overlay');
+const bgMusic = document.getElementById('bg-music');
+
+// Mở thiệp khi click
+function openCard() {
+  if (cardOpened) return;
+  
+  cardLeft.classList.add('open');
+  cardRight.classList.add('open');
+  cardOpened = true;
+  
+  // Hiện nút xác nhận sau 1.5s
+  setTimeout(() => {
+    confirmBtn.classList.add('visible');
+  }, 1500);
+  
+  // Phát nhạc
+  bgMusic.play().catch(e => console.log('Audio play failed:', e));
+}
+
+cardLeft.addEventListener('click', openCard);
+cardRight.addEventListener('click', openCard);
+
+// ===================== CONFIRM BUTTON =====================
+confirmBtn.addEventListener('click', (e) => {
+  e.stopPropagation();
+  
+  // Đóng thiệp
+  cardLeft.classList.remove('open');
+  cardRight.classList.remove('open');
+  
+  // Ẩn overlay sau animation
+  setTimeout(() => {
+    cardOverlay.classList.add('hidden');
+    activateGalaxySpread();
+    showCrushImages();
+  }, 1600);
+});
+
+// ===================== GALAXY SPREAD EFFECT =====================
+function activateGalaxySpread() {
+  isSpreadActive = true;
+  
+  // Đổi màu hạt sang vàng kim
+  const colors = treeGeometry.attributes.color.array;
+  for (let i = 0; i < CONFIG.treeParticles; i++) {
+    colors[i * 3] = 1;
+    colors[i * 3 + 1] = 0.85 + Math.random() * 0.15;
+    colors[i * 3 + 2] = 0.3 + Math.random() * 0.2;
+  }
+  treeGeometry.attributes.color.needsUpdate = true;
+  
+//   // Tính toán vận tốc tỏa ra
+//   const positions = treeGeometry.attributes.position.array;
+//   for (let i = 0; i < CONFIG.treeParticles; i++) {
+//     const x = positions[i * 3];
+//     const y = positions[i * 3 + 1];
+//     const z = positions[i * 3 + 2];
+    
+//     // Hướng từ tâm ra ngoài
+//     const distance = Math.sqrt(x * x + y * y + z * z) || 1;
+//     const angle = Math.random() * Math.PI * 2;
+//     const elevation = (Math.random() - 0.5) * 0.5;
+    
+//     treeVelocities[i * 3] = (x / distance + Math.cos(angle)) * CONFIG.spreadSpeed;
+//     treeVelocities[i * 3 + 1] = (y / distance + elevation) * CONFIG.spreadSpeed * 0.5;
+//     treeVelocities[i * 3 + 2] = (z / distance + Math.sin(angle)) * CONFIG.spreadSpeed;
+//   }
+}
+
+// ===================== CRUSH IMAGES EFFECT =====================
+function showCrushImages() {
+  CONFIG.crushImages.forEach((imgSrc, index) => {
+    setTimeout(() => {
+      const img = document.createElement('img');
+      img.src = imgSrc;
+      img.className = 'crush-image';
+      img.style.left = (10 + Math.random() * 70) + '%';
+      img.style.top = (10 + Math.random() * 70) + '%';
+      
+      document.body.appendChild(img);
+      
+      // Xóa ảnh sau khi animation kết thúc
+      setTimeout(() => {
+        img.remove();
+      }, 6000);
+    }, index * 2000);
+  });
+  
+  // Lặp lại hiệu ứng ảnh
+  setTimeout(() => {
+    showCrushImages();
+  }, CONFIG.crushImages.length * 2000 + 3000);
+}
+
+// ===================== WINDOW RESIZE =====================
+window.addEventListener('resize', () => {
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+});
+
+// ===================== INITIALIZATION =====================
+animate();
+
+// Ẩn loading screen
+setTimeout(() => {
+  document.getElementById('loading').classList.add('hidden');
+}, 1000);
+</script>
+
+</body>
+</html>
